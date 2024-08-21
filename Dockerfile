@@ -1,10 +1,20 @@
-FROM python:3.9-slim
+# Use an official Python runtime as a parent image
+FROM python:3.10-slim
 
+# Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+# Copy the current directory contents into the container at /app
+COPY app /app
 
-COPY . .
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3", "/app/app.py"]
+# Make port 8050 available to the world outside this container
+EXPOSE 8050
+
+# Define environment variable
+ENV NAME DashApp
+
+# Run app.py when the container launches
+CMD ["python", "app.py"]
