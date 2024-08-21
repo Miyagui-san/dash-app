@@ -13,4 +13,4 @@ services:
     environment:
       - DASH_DEBUG=true
     networks:
-      - backend
+      - bridge
