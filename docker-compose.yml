@@ -13,8 +13,8 @@ services:
     environment:
       - DASH_DEBUG=true
     networks:
-      - backend
+      - dash_backend
 
 networks:
-  backend:
+  dash_backend:
     driver: bridge
