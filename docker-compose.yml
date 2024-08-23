@@ -4,4 +4,4 @@ services:
     build: .
     ports:
       - "8050:8050"
-    container_name: dash-app1
+    container_name: dash-app
