@@ -5,7 +5,7 @@ import plotly.express as px
 
 # Sample data
 df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Grapes"],
+    "Fruit": ["Apples", "Oranges", "Bananas", "Grapes1234"],
     "Amount": [4, 1, 2, 3],
     "City": ["SF", "SF", "SF", "SF"]
 })
