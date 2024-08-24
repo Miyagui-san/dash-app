@@ -6,7 +6,7 @@ import pymysql  # or import mysql.connector as mysql
 
 # Database connection configuration
 db_config = {
-    "host": "localhost:3306",  # Use the name of the database container
+    "host": "mariadb",  # Use the name of the database container
     "user": "root",
     "password": "asdfghj",
     "database": "paraguaiot"
