@@ -5,3 +5,9 @@ services:
     ports:
       - "8050:8050"
     container_name: dash-app
+    networks:
+      - stack_backend
+
+networks:
+  stack_backend:
+    external: true
