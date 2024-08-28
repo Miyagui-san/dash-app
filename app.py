@@ -61,4 +61,4 @@ def handle_refresh_data():
     socketio.emit('update-dropdown', identifiers)
 
 if __name__ == "__main__":
-    socketio.run(server, debug=True)
+    socketio.run(server, debug=True, allow_unsafe_werkzeug=True)
