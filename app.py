@@ -1,5 +1,6 @@
 from dash import dcc, html
 import dash
+from dash.dependencies import Input, Output
 import pandas as pd
 import plotly.express as px
 import pymysql
