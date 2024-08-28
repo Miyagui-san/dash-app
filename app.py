@@ -8,8 +8,10 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 
 # Initialize Flask and Flask-SocketIO
-server = Flask(__name__)
-app = dash.Dash(__name__, server=server)
+app = dash.Dash(__name__)
+server = app.server
+#server = Flask(__name__)
+#app = dash.Dash(__name__, server=server)
 socketio = SocketIO(server)
 
 # Database connection configuration
