@@ -2,4 +2,4 @@ dash
 pandas
 plotly
 pymysql
-flask-socketio
+async-dash
