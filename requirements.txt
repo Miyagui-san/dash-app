@@ -1,5 +1,4 @@
+async_dash
 dash
-pandas
-plotly
-pymysql
-async-dash
+dash_extensions
+quart
