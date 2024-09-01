@@ -2,12 +2,12 @@ import dash
 from dash import dcc, html
 import pandas as pd
 import plotly.express as px
-import pymysql  # or import mysql.connector as mysql
+import psycopg2  # PostgreSQL connection library
 
 # Database connection configuration
 db_config = {
-    "host": "mariadb",  # Use the name of the database container
-    "user": "root",
+    "host": "postgresql",  # Use the name of the PostgreSQL database container
+    "user": "postgres",    # Adjust according to your PostgreSQL user
     "password": "asdfghj",
     "database": "paraguaiot"
 }
@@ -15,7 +15,7 @@ db_config = {
 # Function to get data from the database
 def fetch_data():
     # Connect to the database
-    connection = pymysql.connect(**db_config)  # or mysql.connect(**db_config)
+    connection = psycopg2.connect(**db_config)
 
     query = """
     SELECT
