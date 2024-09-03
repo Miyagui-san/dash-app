@@ -5,6 +5,8 @@ services:
     ports:
       - "8050:8050"
     container_name: dash-app
+    volumes:
+      - .:/app
     networks:
       - stack_backend
 
