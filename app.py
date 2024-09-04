@@ -2,21 +2,16 @@ import dash
 from dash import dcc, html
 import pandas as pd
 import plotly.express as px
-import psycopg2  # PostgreSQL connection library
+from sqlalchemy import create_engine
 
 # Database connection configuration
-db_config = {
-    "host": "postgresql",  # Use the name of the PostgreSQL database container
-    "user": "postgres",    # Adjust according to your PostgreSQL user
-    "password": "asdfghj",
-    "database": "paraguaiot"
-}
+DATABASE_URL = "postgresql://postgres:asdfghj@postgresql/paraguaiot"
+
+# Create an engine
+engine = create_engine(DATABASE_URL)
 
 # Function to get data from the database
 def fetch_data():
-    # Connect to the database
-    connection = psycopg2.connect(**db_config)
-
     query = """
     SELECT
         identifier,
@@ -31,10 +26,7 @@ def fetch_data():
     """
 
     # Fetch the data into a DataFrame
-    df = pd.read_sql(query, connection)
-
-    # Close the connection
-    connection.close()
+    df = pd.read_sql(query, engine)
 
     return df
 
