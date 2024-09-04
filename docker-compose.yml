@@ -1,10 +1,10 @@
-version: '3.8'
 services:
   dash-app:
     build: .
     ports:
       - "8050:8050"
-    container_name: dash-app
+    depends_on:
+      - postgres
     volumes:
       - .:/app
     networks:
