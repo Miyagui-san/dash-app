@@ -63,20 +63,20 @@ app.layout = html.Div([
     
     html.Div([
         html.Label("Sexo:"),
-        dcc.Checklist(
+        dcc.RadioItems(
             id="sexo-toggle",
             options=[
                 {'label': 'Male', 'value': 'M'},
                 {'label': 'Female', 'value': 'F'}
             ],
-            value=[],  # No selection by default
+            value=None,  # No selection by default
             inline=True
         )
     ]),
 
     html.Div([
         html.Label("Dentición:"),
-        dcc.Checklist(
+        dcc.RadioItems(
             id="denticion-toggle",
             options=[
                 {'label': 'M', 'value': 'M'},
@@ -87,21 +87,21 @@ app.layout = html.Div([
                 {'label': 'BLL', 'value': 'BLL'},
                 {'label': 'BLLG', 'value': 'BLLG'}
             ],
-            value=[],  # No selection by default
+            value=None,  # No selection by default
             inline=True
         )
     ]),
 
     html.Div([
         html.Label("Type:"),
-        dcc.Checklist(
+        dcc.RadioItems(
             id="type-toggle",
             options=[
                 {'label': 'Dorper', 'value': 'Dorper'},
                 {'label': 'Santa Ines', 'value': 'Santa Ines'},
                 {'label': 'Comercial', 'value': 'Comercial'}
             ],
-            value=[],  # No selection by default
+            value=None,  # No selection by default
             inline=True
         )
     ]),
@@ -164,7 +164,7 @@ def save_data(n_clicks, identifier, sexo, denticion, type, wool):
         session.commit()
 
     # Fetch and display all records
-    records = session.query(WeightMeasurement).all()
+    records = session.query(WeightMeasurement).order_by(WeightMeasurement.timestamp.desc()).all()
     table = html.Table([
         html.Thead(html.Tr([html.Th("ID"), html.Th("Timestamp"), html.Th("Weight"), html.Th("Identifier"),
                             html.Th("Sexo"), html.Th("Denticion"), html.Th("Type"), html.Th("Wool"), html.Th("Category")])),
