@@ -1,0 +1,99 @@
+import dash
+from dash import dcc, html, Input, Output, State, callback_context
+import paho.mqtt.client as mqtt
+import threading
+from sqlalchemy import create_engine, Column, Float, String, DateTime, func
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+# Initialize the Dash app
+app = dash.Dash(__name__)
+
+# Global variables to hold the weight and identifier
+current_weight = 0.0
+current_identifier = ""
+
+# SQLAlchemy setup
+DATABASE_URL = "postgresql+psycopg2://postgres:asdfghj@postgres:5432/ParaguaIoT"
+
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+Base = declarative_base()
+
+# Define the weight_measurements table
+class WeightMeasurement(Base):
+    __tablename__ = "weight_measurements"
+    timestamp = Column(DateTime, default=func.now(), primary_key=True)
+    weight = Column(Float)
+    identifier = Column(String)
+
+Base.metadata.create_all(engine)
+
+# MQTT client setup
+def on_connect(client, userdata, flags, rc, props):
+    client.subscribe("esp32/weight_scale")
+
+def on_message(client, userdata, msg):
+    global current_weight
+    current_weight = float(msg.payload.decode())
+
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect("emqx", 1883, 60)
+
+def mqtt_loop():
+    mqtt_client.loop_forever()
+
+# Start MQTT loop in a separate thread
+mqtt_thread = threading.Thread(target=mqtt_loop)
+mqtt_thread.daemon = True
+mqtt_thread.start()
+
+# Layout of the Dash app
+app.layout = html.Div([
+    html.H1("Weight Scale Dashboard"),
+    dcc.Input(id="identifier-input", type="text", placeholder="Enter Identifier", debounce=True),
+    html.Button("Save", id="save-button"),
+    html.Div(id="current-weight", style={"margin-top": "20px"}),
+    dcc.Interval(id='interval-component', interval=1000, n_intervals=0),
+    html.H2("Records Table"),
+    html.Div(id="records-table")
+])
+
+# Callback to update the current weight display
+@app.callback(
+    Output("current-weight", "children"),
+    [Input("interval-component", "n_intervals")]
+)
+def update_current_weight(n_clicks):
+    return f"Current Weight: {current_weight} kg"
+
+# Callback to save data and update the records table
+@app.callback(
+    Output("records-table", "children"),
+    [Input("save-button", "n_clicks")],
+    [State("identifier-input", "value")]
+)
+def save_data(n_clicks, identifier):
+    global current_weight, current_identifier
+    changed_id = [p['prop_id'] for p in callback_context.triggered][0]
+    
+    if "save-button" in changed_id:
+        current_identifier = identifier
+        if current_identifier:
+            new_record = WeightMeasurement(weight=current_weight, identifier=current_identifier)
+            session.add(new_record)
+            session.commit()
+
+    # Fetch and display all records
+    records = session.query(WeightMeasurement).all()
+    table = html.Table([
+        html.Thead(html.Tr([html.Th("Timestamp"), html.Th("Weight"), html.Th("Identifier")])),
+        html.Tbody([html.Tr([html.Td(record.timestamp), html.Td(record.weight), html.Td(record.identifier)]) for record in records])
+    ])
+    return table
+
+if __name__ == "__main__":
+    app.run_server(debug=True, host='0.0.0.0')
