@@ -8,6 +8,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 # Initialize the Dash app
 app = dash.Dash(__name__)
 
+# Global variables to hold the weight and identifier
+current_weight = 0.0
+current_identifier = ""
+
 # SQLAlchemy setup
 DATABASE_URL = "postgresql+psycopg2://postgres:asdfghj@postgres:5432/ParaguaIoT"
 engine = create_engine(DATABASE_URL)
@@ -163,10 +167,10 @@ def save_data(n_clicks, identifier, sexo, denticion, type, wool):
     records = session.query(WeightMeasurement).all()
     table = html.Table([
         html.Thead(html.Tr([html.Th("ID"), html.Th("Timestamp"), html.Th("Weight"), html.Th("Identifier"),
-                            html.Th("Sexo"), html.Th("Denticion"), html.Th("Type"), html.Th("Wool")])),
+                            html.Th("Sexo"), html.Th("Denticion"), html.Th("Type"), html.Th("Wool"), html.Th("Category")])),
         html.Tbody([html.Tr([html.Td(record.id_weight_measure), html.Td(record.timestamp), html.Td(record.weight),
                              html.Td(record.identifier), html.Td(record.sexo), html.Td(record.denticion),
-                             html.Td(record.type), html.Td('Yes' if record.wool else 'No')]) for record in records])
+                             html.Td(record.type), html.Td('Yes' if record.wool else 'No'), html.Td(record.category)]) for record in records])
     ])
     return table
 
