@@ -148,9 +148,9 @@ def save_data(n_clicks, identifier, sexo, denticion, type, wool):
     changed_id = [p['prop_id'] for p in callback_context.triggered][0]
     
     if "save-button" in changed_id:
-        sexo_value = sexo[0] if sexo else None
-        denticion_value = denticion[0] if denticion else None
-        type_value = type[0] if type else None
+        sexo_value = sexo
+        denticion_value = denticion
+        type_value = type
         wool_value = True if 'yes' in wool else False
         new_record = WeightMeasurement(
             weight=current_weight,
