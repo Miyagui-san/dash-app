@@ -1,0 +1,174 @@
+import dash
+from dash import dcc, html, Input, Output, State, callback_context
+import paho.mqtt.client as mqtt
+import threading
+from sqlalchemy import create_engine, Column, Float, String, DateTime, Boolean, Enum, Integer, func
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+# Initialize the Dash app
+app = dash.Dash(__name__)
+
+# SQLAlchemy setup
+DATABASE_URL = "postgresql+psycopg2://postgres:asdfghj@postgres:5432/ParaguaIoT"
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+Base = declarative_base()
+
+# Define the weight_measurements table with additional columns and constraints
+class WeightMeasurement(Base):
+    __tablename__ = "weight_measurements"
+    id_weight_measure = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, default=func.now())
+    weight = Column(Float)
+    identifier = Column(String)
+    sexo = Column(Enum('M', 'F', name='sexo_enum'))
+    denticion = Column(Enum('M', 'DL', '2D', '4D', '6D', 'BLL', 'BLLG', name='denticion_enum'))
+    type = Column(Enum('Dorper', 'Santa Ines', 'Comercial', name='type_enum'))
+    wool = Column(Boolean)
+    category = Column(String)
+
+Base.metadata.create_all(engine)
+
+# MQTT client setup
+def on_connect(client, userdata, flags, rc, props):
+    client.subscribe("esp32/weight_scale")
+
+def on_message(client, userdata, msg):
+    global current_weight
+    current_weight = float(msg.payload.decode())
+
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect("emqx", 1883, 60)
+
+def mqtt_loop():
+    mqtt_client.loop_forever()
+
+# Start MQTT loop in a separate thread
+mqtt_thread = threading.Thread(target=mqtt_loop)
+mqtt_thread.daemon = True
+mqtt_thread.start()
+
+# Layout of the Dash app
+app.layout = html.Div([
+    html.H1("Weight Scale Dashboard"),
+    dcc.Input(id="identifier-input", type="text", placeholder="Enter Identifier", debounce=True),
+    
+    html.Div([
+        html.Label("Sexo:"),
+        dcc.Checklist(
+            id="sexo-toggle",
+            options=[
+                {'label': 'Male', 'value': 'M'},
+                {'label': 'Female', 'value': 'F'}
+            ],
+            value=[],  # No selection by default
+            inline=True
+        )
+    ]),
+
+    html.Div([
+        html.Label("Dentición:"),
+        dcc.Checklist(
+            id="denticion-toggle",
+            options=[
+                {'label': 'M', 'value': 'M'},
+                {'label': 'DL', 'value': 'DL'},
+                {'label': '2D', 'value': '2D'},
+                {'label': '4D', 'value': '4D'},
+                {'label': '6D', 'value': '6D'},
+                {'label': 'BLL', 'value': 'BLL'},
+                {'label': 'BLLG', 'value': 'BLLG'}
+            ],
+            value=[],  # No selection by default
+            inline=True
+        )
+    ]),
+
+    html.Div([
+        html.Label("Type:"),
+        dcc.Checklist(
+            id="type-toggle",
+            options=[
+                {'label': 'Dorper', 'value': 'Dorper'},
+                {'label': 'Santa Ines', 'value': 'Santa Ines'},
+                {'label': 'Comercial', 'value': 'Comercial'}
+            ],
+            value=[],  # No selection by default
+            inline=True
+        )
+    ]),
+
+    html.Div([
+        html.Label("Wool:"),
+        dcc.Checklist(
+            id="wool-toggle",
+            options=[
+                {'label': 'Lana', 'value': 'yes'}
+            ],
+            value=[],  # Empty list indicates 'no'
+            inline=True
+        )
+    ]),
+
+    html.Button("Save", id="save-button"),
+    html.Div(id="current-weight", style={"margin-top": "20px"}),
+    dcc.Interval(id='interval-component', interval=1000, n_intervals=0),
+    html.H2("Records Table"),
+    html.Div(id="records-table")
+])
+
+# Callback to update the current weight display
+@app.callback(
+    Output("current-weight", "children"),
+    [Input("interval-component", "n_intervals")]
+)
+def update_current_weight_live(n_clicks):
+    return f"Current Weight: {current_weight} kg"
+
+# Callback to save data and update the records table
+@app.callback(
+    Output("records-table", "children"),
+    [Input("save-button", "n_clicks")],
+    [State("identifier-input", "value"),
+     State("sexo-toggle", "value"),
+     State("denticion-toggle", "value"),
+     State("type-toggle", "value"),
+     State("wool-toggle", "value")]
+)
+def save_data(n_clicks, identifier, sexo, denticion, type, wool):
+    global current_weight
+    changed_id = [p['prop_id'] for p in callback_context.triggered][0]
+    
+    if "save-button" in changed_id:
+        sexo_value = sexo[0] if sexo else None
+        denticion_value = denticion[0] if denticion else None
+        type_value = type[0] if type else None
+        wool_value = True if 'yes' in wool else False
+        new_record = WeightMeasurement(
+            weight=current_weight,
+            identifier=identifier,
+            sexo=sexo_value,
+            denticion=denticion_value,
+            type=type_value,
+            wool=wool_value
+        )
+        session.add(new_record)
+        session.commit()
+
+    # Fetch and display all records
+    records = session.query(WeightMeasurement).all()
+    table = html.Table([
+        html.Thead(html.Tr([html.Th("ID"), html.Th("Timestamp"), html.Th("Weight"), html.Th("Identifier"),
+                            html.Th("Sexo"), html.Th("Denticion"), html.Th("Type"), html.Th("Wool")])),
+        html.Tbody([html.Tr([html.Td(record.id_weight_measure), html.Td(record.timestamp), html.Td(record.weight),
+                             html.Td(record.identifier), html.Td(record.sexo), html.Td(record.denticion),
+                             html.Td(record.type), html.Td('Yes' if record.wool else 'No')]) for record in records])
+    ])
+    return table
+
+if __name__ == "__main__":
+    app.run_server(debug=True, host="0.0.0.0")
